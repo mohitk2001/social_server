@@ -2,6 +2,9 @@ const express = require("express");
 const router = express.Router();
 const Users = require("../Models/User");
 const bcrypt = require("bcrypt");
+const validToken=require("../Middleware/Auth")
+const { sign } = require("jsonwebtoken");
+require("dotenv").config();
 router.post("/register", (req, res) => {
   const { name, email, password } = req.body.registerDetails;
   bcrypt
@@ -18,24 +21,40 @@ router.post("/register", (req, res) => {
     });
 });
 
-router.post("/login", async(req, res) => {
-  try{
+router.post("/login", (req, res) => {
+  try {
     const { email, password } = req.body.loginDetails;
-    const found = await Users.findOne({ email: email }, (err, docs) => {
-      if (err) console.log(err);
-      console.log(docs)
-      
+    Users.findOne({ email: email }, (err, docs) => {
+      if (!err) {
+        if (!Boolean(docs)) {
+          return res.json({
+            error: "User does not exist . You need to sign up first",
+          });
+        } else {
+          bcrypt.compare(password, docs.password).then((match) => {
+            if (!match) {
+              return res.json({
+                Comberror: "email and password combination is not correct",
+              });
+            } else if (match) {
+              const token = sign(
+                { email: docs.email, password: docs.password },
+                process.env.secretKey,
+                {
+                  expiresIn: "2h",
+                }
+              );
+              return res.json({ token: token, details: docs });
+            }
+          });
+        }
+      }
     });
-   console.log(found)
-    // if (!found) {
-    //   return res.json({
-    //     error: "User does't exists You need to register first ",
-    //   });
-    // }
-  }
-   catch (error) {
-      console.log(error)
+  } catch (error) {
+    console.log(error);
   }
 });
-
+router.get("/checkin",validToken,(req,res)=>{
+  console.log("here")
+})
 module.exports = router;
