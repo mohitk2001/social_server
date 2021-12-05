@@ -15,6 +15,7 @@ router.post("/register", (req, res) => {
         email,
         password: hash,
       });
+      res.json({"msg":"user created "})
     })
     .catch((e) => {
       console.log(e);
